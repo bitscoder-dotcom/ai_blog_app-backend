@@ -1,15 +1,14 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 
 # Create your views here.
+@login_required
 def index(request):
     return render(request, 'index.html')
 
-def user_login(request):
-    return render(request, 'login.html')
-
-def user_logout(request):
+def generate_blog(request):
     pass
 
 def user_signup(request):
@@ -32,3 +31,23 @@ def user_signup(request):
              error_message = 'Password do not match'
              return render(request, 'signup.html', {'error_message':error_message})
     return render(request, 'signup.html')
+
+def user_login(request):
+
+    if request.method == 'POST':
+       username = request.POST['username']
+       password = request.POST['password']
+
+       user = authenticate(request, username = username, password=password)
+       if user is not None:
+           login(request, user)
+           return redirect('/')
+       else:
+           error_message = 'Invalid login details'
+           return render(request, 'login.html', {'error_message':error_message})
+
+    return render(request, 'login.html')
+
+def user_logout(request):
+    logout(request)
+    return redirect('login')
