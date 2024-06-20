@@ -5,13 +5,12 @@ from django.shortcuts import render, redirect
 from django.db import IntegrityError
 from django.http import JsonResponse
 from django.conf import settings
-from pytube import YouTube
-import assemblyai as aai
+from django.views.decorators.csrf import csrf_exempt
 import json
 import os
 import openai
-
-from django.views.decorators.csrf import csrf_exempt
+import assemblyai as aai
+from pytube import YouTube
 
 # Create your views here.
 @login_required
@@ -57,7 +56,7 @@ def yt_title(link):
 def download_audio(link):
     yt = YouTube(link)
     video = yt.streams.filter(only_audio=True).first()
-    out_file = video.download(output_path=settings.MEDIA_URL)
+    out_file = video.download(output_path=settings.MEDIA_ROOT)
     base, ext = os.path.splitext(out_file)
     new_file = base + '.mp3'
     os.rename(out_file, new_file)
@@ -65,7 +64,7 @@ def download_audio(link):
 
 def get_transcription(link):
     audio_file = download_audio(link)
-    aai.settings.api_key = '4185bb31750644a4aa09a56f6368d562'
+    aai.settings.api_key = settings.ASSEMBLYAI_API_KEY
 
     transcriber = aai.Transcriber()
     transcript = transcriber.transcribe(audio_file)
@@ -73,7 +72,7 @@ def get_transcription(link):
     return transcript.text
 
 def generate_blog_from_transcription(transcript):
-    openai.api_key = 'sk-proj-DeC70sobbmntGvqvy9HWT3BlbkFJc0TTcGuwSsnoEs4Pr2fj'
+    openai.api_key = settings.OPENAI_API_KEY
     prompt = f'''Based on the following transcript from a YouTube video, write a comprehensive blog article, 
                 write it based on the transcribe but do not make it look like a youtube video, make it look like
                 a proper blog article:\n\n{transcript}\n\nArticle:'''
