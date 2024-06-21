@@ -21,12 +21,12 @@ def index(request):
 # Create your views here.
 @csrf_exempt
 def generate_blog(request):
-    print("generate_blog view called")  # Log statement
+    print("generate_blog view called")  
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             yt_link = data['link']
-            print(f"YouTube link: {yt_link}")  # Log statement
+            print(f"YouTube link: {yt_link}")  
         except(KeyError, json.JSONDecodeError):
             return JsonResponse({'error': 'Invalid data sent'}, status = 400)
         
