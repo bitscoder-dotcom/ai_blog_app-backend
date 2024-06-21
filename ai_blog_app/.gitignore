@@ -1,4 +1,4 @@
 # created by virtualenv automatically
 
 ai_blog_app/settings.py
-ai_blog_app/env
+ai_blog_app/python-env/
