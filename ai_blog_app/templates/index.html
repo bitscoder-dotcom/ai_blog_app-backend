@@ -82,6 +82,7 @@
                 <div class="flex space-x-4">
                     <input id="youtubeLink" type="url" placeholder="Paste YouTube Video Link...." class="flex-grow p-2 border border-red-400 rounded-lg">
                     <button id="generateBlogButton" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">Generate</button>
+                    <button id="convertTomp3Button" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">Convert to mp3</button>
                 </div>
              </div>
 
@@ -124,17 +125,50 @@
 
         // const csrftoken = getCookie('csrftoken');
 
-        document.getElementById('generateBlogButton').addEventListener('click', async  () => {
+                document.getElementById('generateBlogButton').addEventListener('click', async () => {
+                const youtubeLink = document.getElementById('youtubeLink').value;
+                const loadingCircle = document.getElementById('loadingCircle');
+                const blogContent = document.getElementById('blogContent');
+
+                if (youtubeLink) {
+                    loadingCircle.style.display = 'block'; 
+                    blogContent.innerHTML = ''; 
+
+                    const endpointUrl = '/generate-blog';
+
+                    try {
+                        const response = await fetch(endpointUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                // 'X-CSRFToken': csrftoken
+                            },
+                            body: JSON.stringify({ link: youtubeLink })
+                        });
+
+                        const data = await response.json();
+
+                        blogContent.innerHTML = data.content;
+                        loadingCircle.style.display = 'none'; 
+                    } catch (error) {
+                        console.error("Error occurred:", error);
+                        alert('Something went wrong. Please try again later');
+                        loadingCircle.style.display = 'none'; 
+                    }
+                } else {
+                    alert("Please enter a YouTube link");
+                }
+            });
+
+
+            document.getElementById('convertTomp3Button').addEventListener('click', async () => {
             const youtubeLink = document.getElementById('youtubeLink').value;
-            // const loadingIndicator = document.getElementById('loading');
-            const blogContent = document.getElementById('blogContent');
+            const loadingCircle = document.getElementById('loadingCircle');
 
             if (youtubeLink) {
-                document.getElementById('loadingCircle').style.display = 'block';
-                // loadingIndicator.classList.remove('hidden');
-                blogContent.innerHTML = ''; // Clear Previous Content
+                loadingCircle.style.display = 'block'; // Show loading indicator
 
-                const endpointUrl = '/generate-blog';
+                const endpointUrl = '/download-audio';
 
                 try {
                     const response = await fetch(endpointUrl, {
@@ -148,18 +182,18 @@
 
                     const data = await response.json();
 
-                    blogContent.innerHTML = data.content;
-                    // loadingIndicator.classList.add('hidden');
+                    alert('Audio downloaded and converted successfully!');
+                    loadingCircle.style.display = 'none'; // Hide loading indicator
                 } catch (error) {
-                    console.error("Error occured:", error)
+                    console.error("Error occurred:", error)
                     alert('Something went wrong. Please try again later');
-                    // loadingIndicator.classList.add('hidden');
+                    loadingCircle.style.display = 'none'; // Hide loading indicator
                 }
-                document.getElementById('loadingCircle').style.display = 'none';
             } else {
                 alert("Please enter a YouTube link")
             }
         });
-     </script>
+
+    </script>
 </body>
 </html>

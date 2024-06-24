@@ -27,8 +27,10 @@ def generate_blog(request):
             data = json.loads(request.body)
             yt_link = data['link']
             print(f"YouTube link: {yt_link}")  
-        except(KeyError, json.JSONDecodeError):
+        except (KeyError, json.JSONDecodeError):
             return JsonResponse({'error': 'Invalid data sent'}, status = 400)
+        except Exception as e:
+             return JsonResponse({'error': 'An error occurred: ' + str(e)}, status = 500)
         
     # get video title
         title = yt_title(yt_link)
@@ -38,15 +40,20 @@ def generate_blog(request):
         print(f"Audio file downloaded at {audio_file}")
 
     # get transcript
+        print("Getting transcription...")
         transcription = get_transcription(yt_link)
         if not transcription:
             return JsonResponse({'error': 'Failed to get transcript'}, status = 500)
 
     # use openai to generate blog
+        print("Generating blog from transcription...")
         blog_content = generate_blog_from_transcription(transcription)
         if not blog_content:
             return JsonResponse({'error': 'Failed to generate blog article'}, status = 500)
 
+        with open(f'media/{title}.txt', 'w') as f:
+            f.write(blog_content)
+        print(f"Blog article saved at media/{title}.txt")
     # save blog article to database
 
     # return blog article as a response 
@@ -55,6 +62,22 @@ def generate_blog(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status = 405)
 
+@csrf_exempt
+def convert_to_mp3(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            yt_link = data['link']
+        except(KeyError, json.JSONDecodeError):
+            return JsonResponse({'error': 'Invalid data sent'}, status = 400)
+
+        try:
+            audio_file = download_audio(yt_link)
+            return JsonResponse({'message': 'Audio downloaded and converted successfully!', 'file_path': audio_file})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}), 500
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status = 405)
 
 
 def yt_title(link):
@@ -89,25 +112,32 @@ def download_audio(link):
     return new_file
 
 def get_transcription(link):
+    print("get_transcription function called")
     audio_file = download_audio(link)
+    print(f"Audio file: {audio_file}")
     aai.settings.api_key = os.getenv('ASSEMBLYAI_API_KEY')
 
     transcriber = aai.Transcriber()
+    print("Transcribing the audio file...")
     transcript = transcriber.transcribe(audio_file)
+    print("Transcription completed")
 
     return transcript.text
 
 def generate_blog_from_transcription(transcript):
+    print("generate_blog_from_transcription function called")
     openai.api_key = os.getenv('OPENAI_API_KEY')
     prompt = f'''Based on the following transcript from a YouTube video, write a comprehensive blog article, 
                 write it based on the transcribe but do not make it look like a youtube video, make it look like
                 a proper blog article:\n\n{transcript}\n\nArticle:'''
+    print("Generating blog content...")
     response = openai.completions.create(
         model="text-davinci-003",
         prompt=prompt,
         max_tokens=1000
     )
     generated_content = response.choices[0].text.strip
+    print("Blog content generated")
 
     return generated_content
 
